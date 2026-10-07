@@ -21,6 +21,7 @@ tu thu cong ke tiep va nho lai cong moi.
 Tu tat khi khong con cua so nao gui tin hieu song trong 3 phut.
 """
 import ctypes
+import gzip
 import io
 import json
 import os
@@ -29,6 +30,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -37,7 +39,8 @@ APP = "Xuong-Photobook"
 DEFAULT_PORT = 4331
 # Noi cap nhat: repo GitHub public. Doi hoac tat bang file Xuong-Photobook.cfg canh .exe:
 #   {"nguon_cap_nhat": "https://..."}   hoac   {"tat_cap_nhat": true}
-UPDATE_SOURCE = "https://raw.githubusercontent.com/PikaPiii-Mono/xuong-photobook/main"
+GITHUB_REPO = "PikaPiii-Mono/xuong-photobook"
+UPDATE_SOURCE = "https://raw.githubusercontent.com/%s/main" % GITHUB_REPO
 UPDATE_WAIT = 4.0         # cho toi da chung nay giay truoc khi mo app bang ban san co
 IDLE_LIMIT = 180          # giay khong co tin hieu song thi tat
 FIRST_WAIT = 300          # cho cua so dau tien toi da
@@ -131,23 +134,68 @@ def local_page():
 
 
 def fetch(url, timeout):
-    req = urllib.request.Request(url, headers={"User-Agent": APP, "Cache-Control": "no-cache"})
-    return urllib.request.urlopen(req, timeout=timeout).read()
+    req = urllib.request.Request(url, headers={"User-Agent": APP, "Cache-Control": "no-cache", "Accept-Encoding": "gzip"})
+    r = urllib.request.urlopen(req, timeout=timeout)
+    data = r.read()
+    if (r.headers.get("Content-Encoding") or "").lower() == "gzip":
+        data = gzip.decompress(data)
+    return data
+
+
+FONTS_RE = re.compile(r"<!--PB:FONTS:BEGIN-->.*?<!--PB:FONTS:END-->", re.S)
+
+
+def local_fonts():
+    """Khoi phong chu nhung san trong .exe hoac ban cache; None neu ban tren may qua cu."""
+    for src in (read_text(os.path.join(cache_dir(), "app.html")), read_text(bundled(APP + ".html"))):
+        m = FONTS_RE.search(src)
+        if m:
+            return m.group(0)
+    return None
+
+
+def resolve_source(src):
+    """raw.githubusercontent.com/.../main di qua CDN, day ban moi len co the 5 phut sau
+    moi thay (them ?t= cung khong pha duoc). Nen hoi API lay commit moi nhat cua main
+    roi doc file theo dung commit do — luon tuoi. API tu choi (may an danh chi duoc
+    60 lan/gio) thi quay ve raw/main. Khong co mang thi loi URLError bay len -> offline."""
+    if src != UPDATE_SOURCE:
+        return src
+    req = urllib.request.Request("https://api.github.com/repos/%s/commits/main" % GITHUB_REPO,
+                                 headers={"User-Agent": APP, "Accept": "application/vnd.github.sha"})
+    try:
+        sha = urllib.request.urlopen(req, timeout=3).read().decode("ascii", "ignore").strip()
+        if re.match(r"^[0-9a-f]{40}$", sha):
+            return "https://raw.githubusercontent.com/%s/%s" % (GITHUB_REPO, sha)
+    except urllib.error.HTTPError:
+        pass
+    return src
 
 
 def check_update(src, current, upd):
     """Chay o luong rieng. upd["state"]: checking -> offline | latest | ready | error."""
     try:
-        v = fetch("%s/version.txt?t=%d" % (src, int(time.time())), 3).decode("utf-8").strip()
+        base = resolve_source(src)
+        v = fetch("%s/version.txt?t=%d" % (base, int(time.time())), 3).decode("utf-8").strip()
     except Exception:
         upd["state"] = "offline"             # khong co mang / khong toi duoc GitHub: bo qua
         return
+    src = base
     if not VERSION_RE.match(v) or v <= current:
         upd["state"] = "latest"
         return
     try:
-        html = fetch("%s/%s.html?t=%d" % (src, APP, int(time.time())), 90).decode("utf-8")
-        if version_of(html) != v or len(html) < 100000:
+        html, fonts = None, local_fonts()
+        if fonts:                                # may da co phong chu: chi tai phan ma (~250 KB)
+            try:
+                core = fetch("%s/app-core.html?t=%d" % (src, int(time.time())), 90).decode("utf-8")
+                if "<!--PB:FONTS-->" in core:
+                    html = core.replace("<!--PB:FONTS-->", fonts, 1)
+            except urllib.error.HTTPError:
+                html = None
+        if html is None:                         # khong co phong chu san / nguon chua co ban core
+            html = fetch("%s/%s.html?t=%d" % (src, APP, int(time.time())), 120).decode("utf-8")
+        if version_of(html) != v or len(html) < 50000:
             raise ValueError("ban tai ve khong hop le")
         with io.open(os.path.join(cache_dir(), "app.html"), "w", encoding="utf-8", newline="\n") as fh:
             fh.write(html)

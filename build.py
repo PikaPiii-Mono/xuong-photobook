@@ -110,7 +110,11 @@ def build():
     version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M")
     with io.open(os.path.join(SRC, "page.html"), encoding="utf-8") as fh:
         page = fh.read()
-    page = page.replace("__PB_VERSION__", version).replace("<!--PB:FONTS-->", fonts_style())
+    page = page.replace("__PB_VERSION__", version)
+    # Ban "core" giu nguyen cho trong phong chu: app .exe chi tai ban nay khi cap nhat
+    # (~250 KB thay vi 1,8 MB) roi tu ghep phong chu san co trong may vao.
+    core_page = page
+    page = page.replace("<!--PB:FONTS-->", "<!--PB:FONTS:BEGIN-->%s<!--PB:FONTS:END-->" % fonts_style())
     js_dir = os.path.join(SRC, "js")
     parts = []
     for name in sorted(os.listdir(js_dir)):
@@ -135,6 +139,9 @@ def build():
             '<link rel="icon" href="%s"></head><body>\n' % icon)
     with io.open(OUT_HTML, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(head + body + "</body></html>\n")
+    core_body = "%s\n<script>\n%s\n</script>\n" % (core_page, js)
+    with io.open(os.path.join(ROOT, "app-core.html"), "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(head + core_body + "</body></html>\n")
     # Dat Xuong-Photobook.html + version.txt len bat ky trang web tinh nao (vd GitHub Pages)
     # roi dien dia chi do vao "nguon_cap_nhat" la cac may tu nhan ban moi.
     with io.open(os.path.join(ROOT, "version.txt"), "w", encoding="ascii", newline="\n") as fh:
