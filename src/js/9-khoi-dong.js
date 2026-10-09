@@ -44,7 +44,7 @@ function scaled(src,max,w,h){const k=Math.min(1,max/Math.max(w,h)),c=document.cr
   x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(src,0,0,c.width,c.height); return c;}
 async function ingest(file){const src=URL.createObjectURL(file);
   try{const im=await loadImg(src),w=im.naturalWidth,h=im.naturalHeight; if(!w||!h) throw new Error('empty');
-    const prevBlob=Math.max(w,h)>2400?await toBlob(scaled(im,2400,w,h),.9):null,thumbBlob=await toBlob(scaled(im,360,w,h),.82);
+    const prevBlob=Math.max(w,h)>2000?await toBlob(scaled(im,2000,w,h),.86):null,thumbBlob=await toBlob(scaled(im,360,w,h),.82);
     if(prevBlob) URL.revokeObjectURL(src);
     const id=uid('p'); PH[id]={id,name:file.name,w,h,url:prevBlob?URL.createObjectURL(prevBlob):src,thumb:URL.createObjectURL(thumbBlob),file,prevBlob,thumbBlob};
     await materialize(PH[id],false); return id;}
@@ -52,22 +52,29 @@ async function ingest(file){const src=URL.createObjectURL(file);
 async function addFiles(list,targetId){
   const files=[...list].filter(f=>(f.type||'').startsWith('image/')||/\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
   if(!files.length){toast('Không thấy file ảnh nào. Hãy chọn ảnh JPG, PNG hoặc WebP.'); return;}
-  const t=toast(`Đang nạp ảnh 0/${files.length}…`,{sticky:true}),out=new Array(files.length); let done=0,next=0;
-  const work=async()=>{while(next<files.length){const i=next++; out[i]=await ingest(files[i]); t.set(`Đang nạp ảnh ${++done}/${files.length}…`);}};
+  const room=MAX_PHOTOS-S.lib.filter(id=>PH[id]&&!PH[id].sample).length;
+  if(room<=0){toast(`Thư viện đã đủ ${MAX_PHOTOS} ảnh. Xóa bớt ảnh không dùng rồi thêm lại.`,{ms:7000}); return;}
+  const over=Math.max(0,files.length-room); if(over) files.length=room;
+  let stop=false;
+  const t=toast(`Đang nạp ảnh 0/${files.length}…`,{sticky:true,action:'Dừng',onAction:()=>{stop=true;}}),out=new Array(files.length); let done=0,next=0;
+  const work=async()=>{while(next<files.length&&!stop){const i=next++; out[i]=await ingest(files[i]); t.set(`Đang nạp ảnh ${++done}/${files.length}…`);}};
   await Promise.all([work(),work(),work()]); t.close();
-  const ids=out.filter(Boolean),bad=files.length-ids.length;
-  if(!ids.length){toast('Không đọc được ảnh nào. Ảnh HEIC của iPhone cần đổi sang JPG trước khi thêm.',{ms:7000}); return;}
+  const ids=out.filter(Boolean),bad=done-ids.length;
+  if(!ids.length){if(!stop) toast('Không đọc được ảnh nào. Ảnh HEIC của iPhone cần đổi sang JPG trước khi thêm.',{ms:7000}); return;}
   const hadSamples=S.lib.some(id=>PH[id]&&PH[id].sample); let placed=0;
   beginEdit();
   if(hadSamples) removeSamples();
   S.lib.push(...ids);
   if(targetId){const f=findFrame(targetId); if(f){setPhoto(f,ids[0]); placed=1;}}
-  else if(hadSamples||!S.spreads.some(sp=>sp.frames.some(f=>photoOf(f)))) placed=autoFill(ids,false);
+  else if(V.autoPlace) placed=autoFill(ids,false);
   V.tab='photos'; commit();
-  let msg=`Đã thêm ${ids.length} ảnh${hadSamples?' thay cho ảnh mẫu':''}.`;
-  if(!targetId){if(placed) msg+=` Đã đặt ${placed} ảnh vào khung trống.`; const left=ids.length-placed; if(left>0) msg+=` Còn ${left} ảnh trong thư viện, bấm “Tự động xếp” để thêm tờ.`;}
+  let msg=`Đã thêm ${ids.length} ảnh vào thư viện${hadSamples?' (đã gỡ ảnh mẫu)':''}.`;
+  if(!targetId){ if(placed) msg+=` Đã tự xếp ${placed} ảnh vào khung trống.`;
+    else msg+=' Kéo ảnh vào khung, hoặc bấm “Tự động xếp”.'; }
+  if(stop) msg+=` Đã dừng giữa chừng: ${files.length-done} ảnh chưa nạp.`;
+  if(over) msg+=` Bỏ qua ${over} ảnh vì vượt giới hạn ${MAX_PHOTOS} ảnh.`;
   if(bad) msg+=` Bỏ qua ${bad} file không đọc được.`;
-  toast(msg,{ms:7000});
+  toast(msg,{ms:8000});
 }
 
 /* ================= ảnh mẫu (vẽ bằng canvas, đánh dấu rõ là mẫu) ================= */

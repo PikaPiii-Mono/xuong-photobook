@@ -10,6 +10,7 @@ Nhấp đúp là chạy, không cần cài đặt. Lần đầu, Windows có th�
 
 - Hơn 50 bố cục: tràn viền, 1–12 ảnh, collage, polaroid, trải đôi (panorama vắt gáy), kiểu tạp chí có chữ, bìa.
 - Khổ album tuỳ ý (20×20, 30×30, A4…), bìa gồm bìa sau, gáy và bìa trước; số trang hiển thị rõ.
+- Thư viện tới 1000 ảnh. Ảnh thêm vào nằm chờ trong thư viện để bạn tự kéo vào khung (bật công tắc "Tự xếp khi thêm ảnh" nếu muốn app xếp hộ); nút "Gỡ hết ảnh khỏi khung" đưa mọi ảnh về thư viện, có hoàn tác.
 - Thước cm hai bên, đường gióng kéo từ thước, hút dính, căn khung, cắt và xoay ảnh trong khung.
 - Xem dạng sách lật trang.
 - **Xuất file in**: PDF (có TrimBox/BleedBox), JPG hoặc PNG 300 dpi, tràn lề, dấu cắt, kiểm tra ảnh thiếu nét trước khi in.

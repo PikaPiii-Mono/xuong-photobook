@@ -127,31 +127,44 @@ function zoomTo(z,ax,ay){
 }
 
 /* ================= dải tờ ================= */
+// Album vài trăm tờ: chỉ vẽ lại ảnh thu nhỏ của tờ nào thật sự đổi nội dung.
+const STRIP_CACHE=new Map();
 function renderStrip(){
-  const st=$('#strip'),n=S.spreads.length-1,sc=58/S.A.h; st.replaceChildren();
+  const st=$('#strip'),n=S.spreads.length-1,sc=58/S.A.h,ak=JSON.stringify(S.A),seen=new Set(),frag=document.createDocumentFragment();
   S.spreads.forEach((sp,i)=>{const it=el('div','st'+(i===S.cur?' on':'')); it.dataset.idx=i; it.tabIndex=0; it.setAttribute('role','button');
     it.draggable=i>0; it.title=i?`Tờ ${i}: Trang ${2*i-1}–${2*i}`:'Bìa album (bìa sau, gáy, bìa trước)';
-    const th=el('div','st-th'); th.append(renderSheet(sp,sc,'thumb')); th.style.width=spreadW(sp)*sc+'px'; th.style.height=S.A.h*sc+'px';
-    const lb=el('div','st-lab'); lb.textContent=i?`${2*i-1}–${2*i}`:'Bìa'; it.append(th,lb); st.append(it);});
+    const key=ak+JSON.stringify(sp); let c=STRIP_CACHE.get(sp.id);
+    if(!c||c.key!==key){const th=el('div','st-th'); th.append(renderSheet(sp,sc,'thumb')); th.style.width=spreadW(sp)*sc+'px'; th.style.height=S.A.h*sc+'px'; c={key,th}; STRIP_CACHE.set(sp.id,c);}
+    seen.add(sp.id);
+    const lb=el('div','st-lab'); lb.textContent=i?`${2*i-1}–${2*i}`:'Bìa'; it.append(c.th,lb); frag.append(it);});
+  for(const k of [...STRIP_CACHE.keys()]) if(!seen.has(k)) STRIP_CACHE.delete(k);
+  st.replaceChildren(frag);
   $('#stripInfo').innerHTML=`Bìa + ${n} tờ <span>· ${n*2} trang ruột</span>`;
   const on=$('.st.on',st); if(on){const l=on.offsetLeft,r=l+on.offsetWidth; if(l<st.scrollLeft) st.scrollLeft=l-8; else if(r>st.scrollLeft+st.clientWidth) st.scrollLeft=r-st.clientWidth+8;}
 }
 
 /* ================= bảng trái ================= */
 const sec=(t,b)=>`<section class="sec"><h3>${t}</h3>${b}</section>`;
+let _libKey='';
 function renderLeft(){
   $$('#tabs button').forEach(b=>{const on=b.dataset.arg===V.tab; b.classList.toggle('on',on); b.setAttribute('aria-selected',on);});
   const body=$('#leftBody'),top=body.scrollTop;
-  body.innerHTML=V.tab==='photos'?libHTML():V.tab==='layouts'?layoutsHTML():albumHTML();
-  body.scrollTop=top;
+  if(V.tab==='photos'){
+    // Thư viện 1000 ảnh: dựng lại cả nghìn ảnh thu nhỏ mỗi lần bấm sẽ giật, nên chỉ dựng khi có gì đổi.
+    const used=usageMap(),key=[V.filter,V.autoPlace,JSON.stringify(used),S.lib.map(id=>PH[id]?PH[id].thumb:'').join()].join('|');
+    if(key===_libKey&&body.dataset.tab==='photos') return;
+    _libKey=key; body.innerHTML=libHTML(used);
+  } else { _libKey=''; body.innerHTML=V.tab==='layouts'?layoutsHTML():albumHTML(); }
+  body.dataset.tab=V.tab; body.scrollTop=top;
 }
-function libHTML(){
-  const used=usageMap(),all=S.lib.map(id=>PH[id]).filter(Boolean),nUsed=all.filter(p=>used[p.id]).length,hasSample=all.some(p=>p.sample);
+function libHTML(used){
+  const all=S.lib.map(id=>PH[id]).filter(Boolean),nUsed=all.filter(p=>used[p.id]).length,hasSample=all.some(p=>p.sample),nReal=all.filter(p=>!p.sample).length;
   const list=all.filter(p=>V.filter==='all'||(V.filter==='free'?!used[p.id]:!!used[p.id]));
   return `<div class="lib-top"><button class="btn primary grow" data-act="addPhotos">${ico('upload')}Thêm ảnh từ máy</button><button class="btn" data-act="autofill" title="Xếp các ảnh chưa dùng vào khung trống, tự thêm tờ khi thiếu chỗ">${ico('wand')}Tự động xếp</button></div>
-  <div class="dropzone" id="dropzone">Kéo thả ảnh từ máy tính vào đây, hoặc thả thẳng vào một khung trên trang.</div>
-  ${hasSample?`<div class="banner"><b>Đang dùng ảnh mẫu</b><span>Ảnh minh họa để bạn xem trước bố cục. Khi bạn thêm ảnh của mình, ảnh mẫu sẽ tự được thay.</span><button class="link" data-act="clearSamples">Gỡ ảnh mẫu</button></div>`:''}
-  <div class="lib-meta"><span><b>${all.length}</b> ảnh · ${nUsed} đã xếp</span><div class="seg sm">${[['all','Tất cả'],['free','Chưa xếp'],['used','Đã xếp']].map(([k,l])=>`<button class="${V.filter===k?'on':''}" data-act="filter" data-arg="${k}">${l}</button>`).join('')}</div></div>
+  <div class="lib-tools"><button class="tgl${V.autoPlace?' on':''}" data-act="toggleAutoPlace" aria-pressed="${V.autoPlace}" title="Bật thì ảnh vừa thêm được xếp ngay vào các khung trống"><span></span>Tự xếp khi thêm ảnh</button><button class="btn sm danger" data-act="unplaceAll" title="Đưa mọi ảnh ra khỏi khung về thư viện. Có thể hoàn tác.">${ico('unplace')}Gỡ hết ảnh khỏi khung</button></div>
+  <div class="dropzone" id="dropzone">Kéo thả ảnh từ máy tính vào đây, hoặc thả thẳng vào một khung trên trang. Tối đa ${MAX_PHOTOS} ảnh.</div>
+  ${hasSample?`<div class="banner"><b>Đang dùng ảnh mẫu</b><span>Ảnh minh họa để bạn xem trước bố cục. Khi bạn thêm ảnh của mình, ảnh mẫu sẽ tự được gỡ.</span><button class="link" data-act="clearSamples">Gỡ ảnh mẫu</button></div>`:''}
+  <div class="lib-meta"><span><b>${hasSample?all.length:nReal}</b>${hasSample?'':` / ${MAX_PHOTOS}`} ảnh · ${nUsed} đã xếp</span><div class="seg sm">${[['all','Tất cả'],['free','Chưa xếp'],['used','Đã xếp']].map(([k,l])=>`<button class="${V.filter===k?'on':''}" data-act="filter" data-arg="${k}">${l}</button>`).join('')}</div></div>
   ${list.length?`<div class="lib">${list.map(p=>`<figure class="th${used[p.id]?' used':''}" draggable="true" data-pid="${p.id}" title="${esc(p.name)} · ${p.w}×${p.h} px${used[p.id]?` · đã đặt ${used[p.id]} lần`:' · chưa xếp'}"><img src="${p.thumb}" alt="${esc(p.name)}" loading="lazy">${used[p.id]?`<span class="cnt">${used[p.id]}</span>`:''}<button class="del" data-act="delPhoto" data-arg="${p.id}" aria-label="Xóa ${esc(p.name)} khỏi thư viện" title="Xóa khỏi thư viện">${ico('x')}</button></figure>`).join('')}</div>`
     :`<p class="empty">${all.length?'Không có ảnh nào trong nhóm này.':'Chưa có ảnh nào. Bấm “Thêm ảnh từ máy” để bắt đầu.'}</p>`}
   <p class="hint">Nhấp một ảnh để đặt vào khung đang chọn, hoặc khung trống đầu tiên của tờ. Chấm trắng ở góc là ảnh chưa xếp.</p>`;

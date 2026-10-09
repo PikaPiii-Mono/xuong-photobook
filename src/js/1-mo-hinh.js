@@ -118,6 +118,8 @@ const FB={'Playfair Display':'Georgia,serif','Cormorant Garamond':'Georgia,serif
 const PLAN=[['text-only','full'],['S','sp-full'],['2-row','3-left-big'],['full','2-row'],['4-grid','single-center'],['S','sp-big3'],['polaroid-3','quote'],['6-2x3','full'],['S','sp-8'],['mag-left','single']];
 const CYCLE=[['full','2-row'],['4-grid','single'],['S','sp-big3'],['3-left-big','2-col'],['6-2x3','full'],['S','sp-full'],['2-big-top','4-mosaic']];
 const ZS=[.1,.15,.2,.25,.33,.5,.67,.75,1,1.25,1.5,2,3,4];
+const MAX_PHOTOS=1000;                    // trần số ảnh trong thư viện (không tính ảnh mẫu)
+const MAX_SPREADS=400;                    // trần số tờ khi "Tự động xếp" tự thêm tờ
 const HANDLES=['nw','n','ne','e','se','s','sw','w'];
 const ANCH={tl:'Trên trái',t:'Trên giữa',tr:'Trên phải',l:'Giữa trái',c:'Chính giữa',r:'Giữa phải',bl:'Dưới trái',b:'Dưới giữa',br:'Dưới phải'};
 
@@ -217,7 +219,7 @@ function autoFill(ids,addSpreads){
   const q=ids.slice(); let n=0;
   const fill=sp=>{for(const f of sortFrames(sp.frames)) if(f.type==='photo'&&!photoOf(f)&&q.length){setPhoto(f,q.shift()); n++;}};
   S.spreads.forEach(fill);
-  let k=0; while(addSpreads&&q.length&&S.spreads.length<101){const sp=newSpread(); applyPlan(sp,CYCLE[k++%CYCLE.length]); S.spreads.push(sp); fill(sp);}
+  let k=0; while(addSpreads&&q.length&&S.spreads.length<=MAX_SPREADS){const sp=newSpread(); applyPlan(sp,CYCLE[k++%CYCLE.length]); S.spreads.push(sp); fill(sp);}
   return n;
 }
 function removeSamples(){const ids=new Set(S.lib.filter(id=>PH[id].sample)); S.lib=S.lib.filter(id=>!ids.has(id));
@@ -234,7 +236,9 @@ function initAlbum(){
 const snapState=()=>JSON.stringify({A:S.A,spreads:S.spreads,guides:S.guides,lib:S.lib,cur:S.cur});
 function restore(s){const o=JSON.parse(s); S.A=o.A; S.spreads=o.spreads; S.guides=o.guides; S.lib=o.lib; S.cur=clamp(o.cur,0,S.spreads.length-1); S.sel=null;}
 function beginEdit(){ if(!H.pending) H.pending=snapState(); }
-function commit(){ if(H.pending){ if(H.pending!==snapState()){H.undo.push(H.pending); if(H.undo.length>100) H.undo.shift(); H.redo=[];} H.pending=null; } render(); }
+// Album 1000 ảnh / vài trăm tờ thì mỗi bản chụp lịch sử ~1 MB: giới hạn theo cả số bước lẫn tổng dung lượng.
+function trimHistory(){ let total=H.undo.reduce((s,x)=>s+x.length,0); while(H.undo.length>1&&(H.undo.length>100||total>6e7)) total-=H.undo.shift().length; }
+function commit(){ if(H.pending){ if(H.pending!==snapState()){H.undo.push(H.pending); trimHistory(); H.redo=[];} H.pending=null; } render(); }
 function act(fn){ beginEdit(); fn(); commit(); }
 function undo(){ if(H.pending) commit(); const s=H.undo.pop(); if(!s) return; H.redo.push(snapState()); restore(s); render(); }
 function redo(){ const s=H.redo.pop(); if(!s) return; H.undo.push(snapState()); restore(s); render(); }

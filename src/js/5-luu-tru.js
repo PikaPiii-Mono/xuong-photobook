@@ -26,7 +26,9 @@ function quotaWarn(){ if(FILE.quotaWarned) return; FILE.quotaWarned=true; toast(
 /* Chép ảnh vào bộ nhớ đệm rồi trỏ sang bản trong đó, để album không còn phụ thuộc file gốc trên ổ đĩa. */
 async function materialize(p,mustCopy){
   if(IDB.db){ try{ await idb('photos','readwrite',s=>s.put(rec(p))); const r=await idb('photos','readonly',s=>s.get(p.id));
-      if(r&&r.blob){p.file=r.blob; if(!p.prevBlob){URL.revokeObjectURL(p.url); p.url=URL.createObjectURL(r.blob);}} return; }
+      // Trỏ cả ảnh gốc lẫn ảnh xem trước sang bản nằm trên đĩa (IndexedDB) để 1000 ảnh không chiếm RAM.
+      // URL cũ thu hồi trễ: trang có thể vẫn đang tải ảnh từ URL đó.
+      if(r&&r.blob){const old=p.url; p.file=r.blob; if(r.prev) p.prevBlob=r.prev; p.url=URL.createObjectURL(r.prev||r.blob); setTimeout(()=>URL.revokeObjectURL(old),60000);} return; }
     catch(e){quotaWarn();} }
   if(mustCopy) try{p.file=new Blob([await p.file.arrayBuffer()],{type:p.file.type}); if(!p.prevBlob){URL.revokeObjectURL(p.url); p.url=URL.createObjectURL(p.file);}}catch(e){}
 }

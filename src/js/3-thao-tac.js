@@ -144,9 +144,18 @@ function clickLibPhoto(pid){
   if(!f){toast('Tờ này đã kín ảnh. Chọn một khung để thay ảnh, hoặc kéo ảnh vào khung.'); return;}
   act(()=>setPhoto(f,pid));
 }
+I.unplace='<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m9 9 6 6M15 9l-6 6"/>';
+// Mặc định KHÔNG tự xếp ảnh vào khung khi thêm; lựa chọn nhớ theo từng máy.
+V.autoPlace=(()=>{try{return localStorage.getItem('pb.autoPlace')==='1';}catch(e){return false;}})();
 const ACT={
   addPhotos(){pickFiles(null);},
   clearSamples(){act(removeSamples); toast('Đã gỡ ảnh mẫu.');},
+  toggleAutoPlace(){V.autoPlace=!V.autoPlace; try{localStorage.setItem('pb.autoPlace',V.autoPlace?'1':'0');}catch(e){}
+    renderLeft(); toast(V.autoPlace?'Ảnh thêm vào sẽ tự xếp vào các khung trống.':'Ảnh thêm vào chỉ nằm trong thư viện, bạn tự kéo vào khung.');},
+  unplaceAll(){let n=0; for(const sp of S.spreads) for(const f of sp.frames) if(photoOf(f)) n++;
+    if(!n){toast('Chưa có ảnh nào nằm trong khung.'); return;}
+    act(()=>{for(const sp of S.spreads) for(const f of sp.frames) if(f.type==='photo') f.photo=null; S.sel=null;});
+    toast(`Đã gỡ ${n} ảnh khỏi khung. Ảnh vẫn còn trong thư viện.`,{ms:8000,action:'Hoàn tác',onAction:undo});},
   autofill(){const u=usageMap(),free=S.lib.filter(id=>!u[id]); if(!free.length){toast('Mọi ảnh trong thư viện đều đã được xếp.'); return;}
     const before=S.spreads.length; let n=0; act(()=>{n=autoFill(free,true);});
     toast(`Đã xếp ${n} ảnh${S.spreads.length>before?`, thêm ${S.spreads.length-before} tờ mới`:''}.`);},
