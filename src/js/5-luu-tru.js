@@ -77,7 +77,7 @@ const hasUnsaved=()=>FILE.dirty&&(H.undo.length>0||S.lib.some(id=>PH[id]&&!PH[id
 async function projectBlob(){
   const photos={},files=[];
   for(const id of referencedIds(S.spreads,S.lib)){const p=PH[id]; if(!p) continue;
-    const blob=p.file||await (await fetch(p.url)).blob(),ext=((p.name.match(/\.(jpe?g|png|webp|gif|bmp|avif)$/i)||[0,'jpg'])[1]).toLowerCase(),path=`photos/${id}.${ext}`;
+    const blob=p.file||await (await fetch(p.url)).blob(),ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif','image/bmp':'bmp'}[blob.type]||((p.name.match(/\.(jpe?g|png|webp|gif|bmp|avif)$/i)||[0,'jpg'])[1]).toLowerCase(),path=`photos/${id}.${ext}`;
     photos[id]={name:p.name,w:p.w,h:p.h,sample:!!p.sample,type:blob.type||'',path}; files.push({name:path,blob,crc:p.crc??null,pid:id});}
   const proj={app:'xuong-photobook',format:1,version:PB_VERSION,savedAt:new Date().toISOString(),A:S.A,spreads:S.spreads,guides:S.guides,lib:S.lib,cur:S.cur,photos};
   const z=await buildZip([{name:'project.json',blob:new Blob([JSON.stringify(proj)],{type:'application/json'})},...files]);

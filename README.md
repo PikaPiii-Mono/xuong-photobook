@@ -10,6 +10,7 @@ Nhấp đúp là chạy, không cần cài đặt. Lần đầu, Windows có th�
 
 - Hơn 50 bố cục: tràn viền, 1–12 ảnh, collage, polaroid, trải đôi (panorama vắt gáy), kiểu tạp chí có chữ, bìa.
 - Khổ album tuỳ ý (20×20, 30×30, A4…), bìa gồm bìa sau, gáy và bìa trước; số trang hiển thị rõ.
+- Đọc JPG, PNG, WebP, AVIF, GIF, BMP, **HEIC/HEIF (iPhone)**, **TIFF** và **ảnh RAW máy ảnh** (DNG, CR2, CR3, NEF, ARW, RAF, ORF, RW2…: lấy ảnh JPEG cỡ lớn máy ảnh nhúng sẵn trong file, xoay đúng chiều). Ảnh HEIC/TIFF/RAW được chuyển sang JPEG 95% ở độ phân giải gốc; chạy offline.
 - Thư viện tới 1000 ảnh. Ảnh thêm vào nằm chờ trong thư viện để bạn tự kéo vào khung (bật công tắc "Tự xếp khi thêm ảnh" nếu muốn app xếp hộ); nút "Gỡ hết ảnh khỏi khung" đưa mọi ảnh về thư viện, có hoàn tác.
 - Thước cm hai bên, đường gióng kéo từ thước, hút dính, căn khung, cắt và xoay ảnh trong khung.
 - Xem dạng sách lật trang.
@@ -47,7 +48,16 @@ src/fonts/           phông chữ Google Fonts (giấy phép SIL OFL), nhúng s�
 desktop/launcher.py  bộ khởi chạy của file .exe
 build.py             dựng Xuong-Photobook.html, đóng gói .exe, đẩy bản mới lên GitHub
 server.js            (tuỳ chọn) chạy như trang web trong mạng nội bộ: node server.js 4330
+vendor/              bộ giải mã ảnh của bên thứ ba, giữ nguyên dạng file riêng
 ```
+
+Thư viện bên thứ ba trong `vendor/` (chỉ được tải khi gặp đúng loại file):
+
+| File | Dự án | Giấy phép |
+|---|---|---|
+| `libheif-bundle.js` | [libheif](https://github.com/strukturag/libheif) qua [libheif-js](https://github.com/catdad-experiments/libheif-js) 1.23.5 | LGPL-3.0 (`LICENSE-libheif.txt`) — mã nguồn tại hai liên kết bên cạnh; thay file này bằng bản build khác cùng API là app dùng được |
+| `UTIF.js` | [UTIF.js](https://github.com/photopea/UTIF.js) 3.1.0 | MIT (`LICENSE-utif.txt`) |
+| `pako_inflate.min.js` | [pako](https://github.com/nodeca/pako) 2.1.0 | MIT (`LICENSE-pako.txt`) |
 
 Cần Python 3.9+ có PyInstaller và Pillow, Node.js (để kiểm tra cú pháp), GitHub CLI đã đăng nhập.
 

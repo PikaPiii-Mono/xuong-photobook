@@ -42,16 +42,20 @@ const loadImg=src=>new Promise((res,rej)=>{const im=new Image(); im.onload=()=>r
 function scaled(src,max,w,h){const k=Math.min(1,max/Math.max(w,h)),c=document.createElement('canvas');
   c.width=Math.max(1,Math.round(w*k)); c.height=Math.max(1,Math.round(h*k)); const x=c.getContext('2d');
   x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(src,0,0,c.width,c.height); return c;}
-async function ingest(file){const src=URL.createObjectURL(file);
+// Trả về id ảnh, hoặc {err} kèm lý do để báo cho người dùng biết file nào không đọc được.
+async function ingest(file){
+  let data=file,kind='native';
+  try{ ({blob:data,kind}=await decodeAny(file)); }catch(e){ return {err:e.message||'không giải mã được'}; }
+  const src=URL.createObjectURL(data);
   try{const im=await loadImg(src),w=im.naturalWidth,h=im.naturalHeight; if(!w||!h) throw new Error('empty');
     const prevBlob=Math.max(w,h)>2000?await toBlob(scaled(im,2000,w,h),.86):null,thumbBlob=await toBlob(scaled(im,360,w,h),.82);
     if(prevBlob) URL.revokeObjectURL(src);
-    const id=uid('p'); PH[id]={id,name:file.name,w,h,url:prevBlob?URL.createObjectURL(prevBlob):src,thumb:URL.createObjectURL(thumbBlob),file,prevBlob,thumbBlob};
+    const id=uid('p'); PH[id]={id,name:file.name,w,h,url:prevBlob?URL.createObjectURL(prevBlob):src,thumb:URL.createObjectURL(thumbBlob),file:data,prevBlob,thumbBlob,conv:kind==='native'?null:kind};
     await materialize(PH[id],false); return id;}
-  catch(err){URL.revokeObjectURL(src); return null;}}
+  catch(err){URL.revokeObjectURL(src); return {err:kind==='native'?'trình duyệt không đọc được định dạng này':'file hỏng hoặc không đúng định dạng'};}}
 async function addFiles(list,targetId){
-  const files=[...list].filter(f=>(f.type||'').startsWith('image/')||/\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
-  if(!files.length){toast('Không thấy file ảnh nào. Hãy chọn ảnh JPG, PNG hoặc WebP.'); return;}
+  const files=[...list].filter(f=>(f.type||'').startsWith('image/')||IMG_EXT_RE.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  if(!files.length){toast('Không thấy file ảnh nào. App nhận JPG, PNG, WebP, HEIC, TIFF, AVIF, GIF, BMP và ảnh RAW máy ảnh.',{ms:7000}); return;}
   const room=MAX_PHOTOS-S.lib.filter(id=>PH[id]&&!PH[id].sample).length;
   if(room<=0){toast(`Thư viện đã đủ ${MAX_PHOTOS} ảnh. Xóa bớt ảnh không dùng rồi thêm lại.`,{ms:7000}); return;}
   const over=Math.max(0,files.length-room); if(over) files.length=room;
@@ -59,8 +63,9 @@ async function addFiles(list,targetId){
   const t=toast(`Đang nạp ảnh 0/${files.length}…`,{sticky:true,action:'Dừng',onAction:()=>{stop=true;}}),out=new Array(files.length); let done=0,next=0;
   const work=async()=>{while(next<files.length&&!stop){const i=next++; out[i]=await ingest(files[i]); t.set(`Đang nạp ảnh ${++done}/${files.length}…`);}};
   await Promise.all([work(),work(),work()]); t.close();
-  const ids=out.filter(Boolean),bad=done-ids.length;
-  if(!ids.length){if(!stop) toast('Không đọc được ảnh nào. Ảnh HEIC của iPhone cần đổi sang JPG trước khi thêm.',{ms:7000}); return;}
+  const ids=out.filter(x=>typeof x==='string'),fails=files.map((f,i)=>out[i]&&out[i].err?`${f.name} (${out[i].err})`:null).filter(Boolean),bad=fails.length;
+  const failTxt=bad?` Không đọc được ${bad} file: ${fails.slice(0,3).join('; ')}${bad>3?` và ${bad-3} file khác`:''}.`:'';
+  if(!ids.length){if(!stop) toast('Chưa thêm được ảnh nào.'+failTxt,{ms:10000}); return;}
   const hadSamples=S.lib.some(id=>PH[id]&&PH[id].sample); let placed=0;
   beginEdit();
   if(hadSamples) removeSamples();
@@ -73,8 +78,10 @@ async function addFiles(list,targetId){
     else msg+=' Kéo ảnh vào khung, hoặc bấm “Tự động xếp”.'; }
   if(stop) msg+=` Đã dừng giữa chừng: ${files.length-done} ảnh chưa nạp.`;
   if(over) msg+=` Bỏ qua ${over} ảnh vì vượt giới hạn ${MAX_PHOTOS} ảnh.`;
-  if(bad) msg+=` Bỏ qua ${bad} file không đọc được.`;
-  toast(msg,{ms:8000});
+  const nConv=ids.filter(id=>PH[id].conv).length;
+  if(nConv) msg+=` Đã chuyển ${nConv} ảnh HEIC/TIFF/RAW sang JPEG chất lượng cao.`;
+  msg+=failTxt;
+  toast(msg,{ms:bad?12000:8000});
 }
 
 /* ================= ảnh mẫu (vẽ bằng canvas, đánh dấu rõ là mẫu) ================= */

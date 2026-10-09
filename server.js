@@ -28,6 +28,15 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+  const vm = url.match(/^\/vendor\/([A-Za-z0-9._-]+)$/);   // bộ giải mã HEIC/TIFF
+  if (vm) {
+    fs.readFile(path.join(__dirname, 'vendor', vm[1]), (err, buf) => {
+      if (err) { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, { 'Content-Type': vm[1].endsWith('.js') ? 'application/javascript; charset=utf-8' : 'application/octet-stream', 'Cache-Control': 'max-age=86400' });
+      res.end(buf);
+    });
+    return;
+  }
   if (url !== '/' && url !== '/index.html' && url !== '/Xuong-Photobook.html') {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Không có trang này. Mở / để vào Xưởng Photobook.'); return;
   }

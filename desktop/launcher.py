@@ -204,6 +204,27 @@ def check_update(src, current, upd):
         upd["state"] = "error"
 
 
+def vendor_file(name, src):
+    """Bo giai ma anh (HEIC, TIFF...): ban kem trong .exe -> ban da tai ve -> tai tu GitHub roi giu lai.
+    Nho vay ban .exe cu van lay duoc bo giai ma moi ma cac phien ban sau can them."""
+    if not re.match(r"^[A-Za-z0-9._-]+$", name or ""):
+        return None
+    for path in (bundled("vendor/" + name), os.path.join(cache_dir(), "vendor", name)):
+        if os.path.isfile(path):
+            with open(path, "rb") as fh:
+                return fh.read()
+    if not src:
+        return None
+    try:
+        data = fetch("%s/vendor/%s" % (src, name), 60)
+        os.makedirs(os.path.join(cache_dir(), "vendor"), exist_ok=True)
+        with open(os.path.join(cache_dir(), "vendor", name), "wb") as fh:
+            fh.write(data)
+        return data
+    except Exception:
+        return None
+
+
 def find_browser():
     for base in (os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
                  os.environ.get("ProgramFiles", r"C:\Program Files"), os.environ.get("LOCALAPPDATA", "")):
@@ -287,6 +308,11 @@ def main():
                     state["version"] = upd["version"]
                 body = json.dumps({"state": upd["state"], "version": upd["version"], "serving": state["version"]})
                 return self._send(200, body.encode("utf-8"), "application/json")
+            if p.startswith("/vendor/"):
+                data = vendor_file(p[len("/vendor/"):], src)
+                if data is None:
+                    return self._send(404)
+                return self._send(200, data, "application/javascript; charset=utf-8" if p.endswith(".js") else "application/octet-stream")
             if p in ("/icon-192.png", "/favicon.ico") and icon:
                 return self._send(200, icon, "image/png")
             return self._send(404)

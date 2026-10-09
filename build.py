@@ -179,6 +179,7 @@ def make_exe(version):
            "--icon", ico,
            "--add-data", OUT_HTML + os.pathsep + ".",
            "--add-data", png + os.pathsep + ".",
+           "--add-data", os.path.join(ROOT, "vendor") + os.pathsep + "vendor",   # bo giai ma HEIC/TIFF
            os.path.join(ROOT, "desktop", "launcher.py")]
     print("  Chay PyInstaller…")
     r = subprocess.run(cmd, cwd=ROOT)
