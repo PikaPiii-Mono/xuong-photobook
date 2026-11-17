@@ -4,7 +4,7 @@ I.folder='<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 
 I.chev='<path d="m6 9 6 6 6-6"/>';
 const PB_VERSION=($('meta[name="pb-version"]')||{}).content||'dev';
 const DESK=window.PB_DESKTOP||null;                  // launcher .exe chèn vào khi phục vụ trang
-const FILE={handle:null,name:null,savedHash:null,dirty:true,autoAt:null,busy:false,restoring:false,quotaWarned:false};
+const FILE={handle:null,name:null,savedHash:null,savedMus:null,dirty:true,autoAt:null,busy:false,restoring:false,quotaWarned:false};
 const IDB={db:null};
 const hashStr=s=>{let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return h>>>0;};
 const contentHash=()=>hashStr(JSON.stringify({A:S.A,spreads:S.spreads,guides:S.guides,lib:S.lib}));
@@ -51,9 +51,10 @@ async function saveCrcs(){const m={}; for(const id of S.lib) if(PH[id]&&PH[id].c
 let _pt=0;
 function persistSoon(){ updateDirty(); if(!IDB.db||FILE.restoring) return; clearTimeout(_pt); _pt=setTimeout(persistNow,700); }
 async function persistNow(){ if(!IDB.db||FILE.restoring) return; clearTimeout(_pt);
-  await kvSet('current',{v:1,snap:snapState(),fileName:FILE.name,savedHash:FILE.savedHash,at:Date.now()});
+  await kvSet('current',{v:1,snap:snapState(),fileName:FILE.name,savedHash:FILE.savedHash,savedMus:FILE.savedMus,at:Date.now()});
   FILE.autoAt=new Date(); renderFileChip(); }
-function updateDirty(){ FILE.dirty=contentHash()!==FILE.savedHash; renderFileChip(); }
+// Nhạc nền không nằm trong contentHash (để đổi nhạc không phải dựng lại slide) nên xét riêng.
+function updateDirty(){ FILE.dirty=contentHash()!==FILE.savedHash||musHash()!==(FILE.savedMus??musHash()); renderFileChip(); }
 async function restoreSession(){
   const st=await kvGet('current'); if(!st||!st.snap) return false;
   const o=JSON.parse(st.snap); if(!o||!Array.isArray(o.spreads)||!o.spreads.length) return false;
@@ -62,6 +63,7 @@ async function restoreSession(){
   for(const id of referencedIds(o.spreads,o.lib||[])){const r=byId[id]; if(r&&r.blob&&r.thumb) await photoFromBlob(id,{...r,crc:crc[id]},r.blob,r.prev,r.thumb);}
   S.A=o.A; S.spreads=o.spreads; S.guides=o.guides||[]; S.lib=(o.lib||[]).filter(id=>PH[id]); S.cur=clamp(o.cur||1,0,S.spreads.length-1); S.sel=null;
   FILE.name=st.fileName||null; FILE.savedHash=st.savedHash??null; FILE.autoAt=st.at?new Date(st.at):null;
+  await musRestore(); FILE.savedMus=st.savedMus??null;
   return true;
 }
 
@@ -71,7 +73,7 @@ function confirmDlg(title,text,okLabel){return new Promise(res=>{
   const done=v=>{m.hidden=true; $('#cfOk').onclick=$('#cfCancel').onclick=null; m.onkeydown=null; res(v);};
   $('#cfOk').onclick=()=>done(true); $('#cfCancel').onclick=()=>done(false);
   m.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault(); done(false);}};});}
-const hasUnsaved=()=>FILE.dirty&&(H.undo.length>0||S.lib.some(id=>PH[id]&&!PH[id].sample));
+const hasUnsaved=()=>FILE.dirty&&(H.undo.length>0||MUS.list.length>0||S.lib.some(id=>PH[id]&&!PH[id].sample));
 
 /* ---- file album .pbook (ZIP: project.json + ảnh gốc) ---- */
 async function projectBlob(){
@@ -79,7 +81,10 @@ async function projectBlob(){
   for(const id of referencedIds(S.spreads,S.lib)){const p=PH[id]; if(!p) continue;
     const blob=p.file||await (await fetch(p.url)).blob(),ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/avif':'avif','image/bmp':'bmp'}[blob.type]||((p.name.match(/\.(jpe?g|png|webp|gif|bmp|avif)$/i)||[0,'jpg'])[1]).toLowerCase(),path=`photos/${id}.${ext}`;
     photos[id]={name:p.name,w:p.w,h:p.h,sample:!!p.sample,type:blob.type||'',path}; files.push({name:path,blob,crc:p.crc??null,pid:id});}
-  const proj={app:'xuong-photobook',format:1,version:PB_VERSION,savedAt:new Date().toISOString(),A:S.A,spreads:S.spreads,guides:S.guides,lib:S.lib,cur:S.cur,photos};
+  const music=[];
+  for(const t of MUS.list){const path=`music/${t.id}.${musExt(t)}`;
+    music.push({id:t.id,name:t.name,type:t.type||'',dur:t.dur||0,path}); files.push({name:path,blob:t.blob,crc:null,pid:null});}
+  const proj={app:'xuong-photobook',format:1,version:PB_VERSION,savedAt:new Date().toISOString(),A:S.A,spreads:S.spreads,guides:S.guides,lib:S.lib,cur:S.cur,photos,music};
   const z=await buildZip([{name:'project.json',blob:new Blob([JSON.stringify(proj)],{type:'application/json'})},...files]);
   for(const f of files) if(PH[f.pid]) PH[f.pid].crc=f.crc;
   saveCrcs(); return z;
@@ -99,7 +104,7 @@ async function saveProject(saveAs){
     const blob=await projectBlob(); let name;
     if(mode==='handle'&&handle){await writeHandle(handle,blob); FILE.handle=handle; name=handle.name; kvSet('handle',handle);}
     else{ const inViewer=!!window.claude; name=inViewer?pbookName()+'.zip':pbookName(); const r=await saveFile(blob,name); if(!r.ok){t.close(); FILE.busy=false; toast(r.msg,{ms:7000}); return;} }
-    FILE.name=name; FILE.savedHash=contentHash(); t.close(); updateDirty(); persistNow();
+    FILE.name=name; FILE.savedHash=contentHash(); FILE.savedMus=musHash(); t.close(); updateDirty(); persistNow();
     toast(`Đã lưu ${name} (${fmtMB(blob.size)}).${mode==='handle'?' Lần sau bấm Ctrl+S sẽ ghi đè đúng file này.':''}`,{ms:6000});
   }catch(e){t.close(); toast('Không lưu được album: '+((e&&e.message)||e)+'.',{ms:8000});}
   FILE.busy=false;
@@ -134,9 +139,11 @@ async function openProject(file,handle){
     await Promise.all([work(),work(),work()]);
     S.A=pj.A; S.spreads=pj.spreads; S.guides=pj.guides||[]; S.lib=(pj.lib||[]).filter(id=>PH[id]); S.cur=clamp(pj.cur||1,0,S.spreads.length-1);
     S.sel=null; H.undo=[]; H.redo=[]; H.pending=null; V.zoom='fit';
-    FILE.handle=handle||null; FILE.name=file.name; FILE.savedHash=contentHash(); kvSet('handle',FILE.handle);
+    const mus=[]; for(const m of (pj.music||[])){const b=ent[m.path]; if(b) mus.push({...m,blob:new Blob([b],{type:m.type||'audio/mpeg'})});}
+    musSet(mus); await musPersist();
+    FILE.handle=handle||null; FILE.name=file.name; FILE.savedHash=contentHash(); FILE.savedMus=musHash(); kvSet('handle',FILE.handle);
     t.close(); render(); await persistNow(); gcPhotos();
-    toast(`Đã mở ${file.name}: ${S.lib.length} ảnh, ${S.spreads.length-1} tờ.${miss?` ${miss} ảnh trong file bị hỏng nên bỏ qua.`:''}`,{ms:6000});
+    toast(`Đã mở ${file.name}: ${S.lib.length} ảnh, ${S.spreads.length-1} tờ${mus.length?`, ${mus.length} bài nhạc`:''}.${miss?` ${miss} ảnh trong file bị hỏng nên bỏ qua.`:''}`,{ms:6000});
   }catch(e){t.close(); toast('Không mở được file: '+((e&&e.message)||e)+'.',{ms:8000});}
 }
 async function pickOpen(){
@@ -147,7 +154,8 @@ async function pickOpen(){
 async function newAlbum(){
   if(hasUnsaved()&&!(await confirmDlg('Tạo album mới?','Album đang làm có thay đổi chưa lưu ra file. Tạo album mới thì phần chưa lưu sẽ mất.','Tạo album mới'))) return;
   S.lib=[]; S.guides=[]; S.sel=null; initAlbum(); S.cur=1; H.undo=[]; H.redo=[]; H.pending=null; V.zoom='fit';
-  FILE.handle=null; FILE.name=null; FILE.savedHash=null; kvSet('handle',null);
+  musSet([]); await musPersist();
+  FILE.handle=null; FILE.name=null; FILE.savedHash=null; FILE.savedMus=null; kvSet('handle',null);
   render(); await persistNow(); gcPhotos(); toast('Đã tạo album mới. Bấm “Thêm ảnh” để bắt đầu.');
 }
 

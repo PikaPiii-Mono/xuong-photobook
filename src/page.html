@@ -397,6 +397,17 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .ss-ck::after{content:"";position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 .ss-th.off .ss-ck{background:rgba(0,0,0,.45)}
 .ss-th.off .ss-ck::after{display:none}
+.mus-list{display:grid;gap:4px;margin:0 0 8px;padding:0;list-style:none}
+.mus-it{display:flex;align-items:center;gap:3px;padding:3px 4px 3px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel-2)}
+.mus-it.on{border-color:var(--accent-line);background:var(--accent-soft)}
+.mus-nm{flex:1;min-width:0;border:0;background:none;padding:0;margin:0;text-align:left;font:500 12.5px var(--f-ui);color:inherit;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mus-it.on .mus-nm{color:var(--accent)}
+.mus-du{font:500 11px var(--f-mono);color:var(--muted);padding:0 2px}
+.mus-b{flex:none;width:22px;height:22px;border:0;background:none;border-radius:5px;color:var(--muted);cursor:pointer;padding:0;display:grid;place-items:center;font-size:12px;line-height:1}
+.mus-b:hover:not(:disabled){background:var(--panel);color:var(--fg)}
+.mus-b:disabled{opacity:.3;cursor:default}
+.mus-b .i{width:13px;height:13px}
+.mus-add{gap:6px;margin-bottom:10px}
 .ss-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--line)}
 .ss-foot .lbl{font-family:var(--f-mono)}
 .ss-wait{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;color:#e8e8ea;font-size:13.5px;width:min(320px,80%);margin:auto}
@@ -539,12 +550,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 </div>
 <div class="modal light" id="slideModal" hidden role="dialog" aria-modal="true" aria-labelledby="ssTitle">
   <div class="dlg ss">
-    <div class="dlg-h"><div><b id="ssTitle">Trình chiếu ảnh</b><span>Chỉnh hiệu ứng, xem trước rồi xuất ra file PowerPoint (.pptx) để chiếu hoặc sửa tiếp.</span></div><button class="btn icon sm ghost" data-act="ssClose" aria-label="Đóng"><i data-ico="x"></i></button></div>
+    <div class="dlg-h"><div><b id="ssTitle">Trình chiếu ảnh</b><span>Chỉnh hiệu ứng, thêm nhạc, xem trước rồi xuất ra file PowerPoint (.pptx) để chiếu hoặc sửa tiếp.</span></div><button class="btn icon sm ghost" data-act="ssClose" aria-label="Đóng"><i data-ico="x"></i></button></div>
     <div class="ss-body"><div class="ss-set" id="ssSet"></div><div class="ss-main"><div class="ss-view" id="ssView"></div><div class="ss-strip" id="ssStrip" aria-label="Danh sách slide"></div></div></div>
     <div class="ss-foot"><span class="lbl" id="ssInfo"></span><div class="row"><button class="btn" data-act="ssPresent"><i data-ico="eye"></i>Chiếu toàn màn hình</button><button class="btn primary" id="ssExport" data-act="ssExport"><i data-ico="download"></i>Xuất PowerPoint (.pptx)</button></div></div>
   </div>
 </div>
 <input type="file" id="fileOpen" accept=".pbook,.zip" hidden>
+<input type="file" id="fileMusic" accept="audio/*,.mp3,.m4a,.aac,.wav,.wma,.ogg,.oga,.opus,.flac" multiple hidden>
 <input type="file" id="file" accept="image/*,.heic,.heif,.hif,.tif,.tiff,.avif,.jfif,.dng,.cr2,.cr3,.nef,.nrw,.arw,.srf,.sr2,.raf,.orf,.rw2,.pef,.srw" multiple hidden>
 
 <div class="modal" id="bookModal" hidden role="dialog" aria-label="Xem dạng sách">
