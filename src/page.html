@@ -302,8 +302,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .mh{justify-content:space-between}
 .mh b{font-family:var(--f-display);font-size:20px;font-weight:600}
 .mh span,.mf span{font:500 13px var(--f-mono);opacity:.8}
-.modal .btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:var(--scrim-fg)}
-.modal .btn:hover{background:rgba(255,255,255,.16)}
+.modal:not(.light) .btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:var(--scrim-fg)}
+.modal:not(.light) .btn:hover{background:rgba(255,255,255,.16)}
 .bk-stage{display:grid;place-items:center;min-height:0}
 .book{position:relative;perspective:2800px;cursor:pointer}
 .bk-half{position:absolute;top:0;width:50%;height:100%;overflow:hidden}
@@ -372,7 +372,71 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .cf-t{display:block;font-family:var(--f-display);font-size:20px;font-weight:600;margin-bottom:8px}
 .cf-p{margin:0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.55}
 @media (max-width:1400px){.hide-m{display:none}}
+@media (max-width:1700px){.top .hide-w{display:none}}
 @media (max-width:1180px){.fchip{max-width:190px}}
+
+/* ---------- trình chiếu ---------- */
+.dlg.ss{width:min(1280px,100%);height:min(860px,100%);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+.ss-body{display:grid;grid-template-columns:330px minmax(0,1fr);min-height:0}
+.ss-set{border-right:1px solid var(--line);overflow:auto;padding:16px 18px;min-height:0}
+.ss-row{display:grid;gap:6px;margin-bottom:10px}
+.ss-row .seg{justify-self:start;flex-wrap:wrap}
+.ss-fx{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.ss-in{display:grid;gap:4px;font-size:12px;color:var(--muted);margin-bottom:10px}
+.ss-in input,.ss-in select{width:100%;height:32px;font-size:13.5px}
+.ss-main{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:12px;padding:16px;min-height:0;min-width:0}
+.ss-view{position:relative;border-radius:10px;overflow:hidden;background:#0b0b0d;min-height:0}
+.ss-view:fullscreen{border-radius:0}
+.ss-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;min-height:96px}
+.ss-th{flex:none;position:relative;height:72px;border-radius:6px;overflow:hidden;cursor:pointer;outline:1px solid var(--line);background:var(--panel-2)}
+.ss-th img{height:100%;display:block}
+.ss-th span{position:absolute;left:0;right:0;bottom:0;padding:2px 6px;font:500 10.5px var(--f-mono);color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-th.off img{opacity:.3;filter:grayscale(1)}
+.ss-th:hover{outline:2px solid var(--accent-line)}
+.ss-ck{position:absolute;right:4px;top:4px;width:20px;height:20px;border-radius:5px;border:2px solid #fff;background:var(--accent);cursor:pointer;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.ss-ck::after{content:"";position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.ss-th.off .ss-ck{background:rgba(0,0,0,.45)}
+.ss-th.off .ss-ck::after{display:none}
+.ss-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--line)}
+.ss-foot .lbl{font-family:var(--f-mono)}
+.ss-wait{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;color:#e8e8ea;font-size:13.5px;width:min(320px,80%);margin:auto}
+.ss-wait .bar{width:100%;background:rgba(255,255,255,.12);border:0}
+.ss-wait .bar i{width:40%;animation:ss-busy 1.1s ease-in-out infinite alternate}
+@keyframes ss-busy{from{margin-left:0}to{margin-left:60%}}
+.spv-frame{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);overflow:hidden;background:#000}
+.spv-frame .ly{position:absolute;inset:0;overflow:hidden}
+.spv-frame .bd{position:absolute;left:-8%;top:-8%;width:116%;height:116%;object-fit:cover;max-width:none!important}
+.spv-frame .fg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-width:none!important}
+.spv-frame .fg.margin{inset:5%;width:90%;height:90%;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45))}
+.spv-frame .fg.cover{object-fit:cover}
+.spv-frame .fg.kb{animation:ss-kb var(--kd) linear both}
+@keyframes ss-kb{from{transform:scale(1)}to{transform:scale(1.1)}}
+.spv-frame .tx{position:absolute;inset:8%;display:grid;align-content:center;justify-items:center;text-align:center;color:#fff;gap:.6em;text-shadow:0 2px 8px rgba(0,0,0,.45)}
+.spv-frame .tx.dark{color:#1d1d1f;text-shadow:none}
+.spv-frame .tx .t{font-size:var(--tsz);line-height:1.15;white-space:pre-wrap}
+.spv-frame .tx .t.sm{font-size:calc(var(--tsz)*.82)}
+.spv-frame .tx .s{font-size:calc(var(--tsz)*.42);opacity:.88}
+.spv-empty{position:absolute;inset:0;display:grid;place-items:center;color:#ccc;font-size:14px;padding:20px;text-align:center}
+.ly.in-fade{animation:ss-in var(--td) ease both}.ly.out-fade{animation:ss-out var(--td) ease both}
+.ly.in-dissolve{animation:ss-dis var(--td) steps(12) both}.ly.out-dissolve{animation:ss-out var(--td) steps(12) both}
+.ly.in-black{animation:ss-blk-in var(--td) linear both}.ly.out-black{animation:ss-blk-out var(--td) linear both}
+.ly.in-push{animation:ss-push-in var(--td) cubic-bezier(.5,0,.2,1) both}.ly.out-push{animation:ss-push-out var(--td) cubic-bezier(.5,0,.2,1) both}
+.ly.in-wipe{animation:ss-wipe var(--td) ease-in-out both}.ly.out-wipe{animation:ss-hold var(--td) both}
+.ly.in-zoom{animation:ss-zoom var(--td) ease-out both}.ly.out-zoom{animation:ss-out var(--td) ease both}
+.ly.in-none,.ly.out-none{animation:none}
+@keyframes ss-in{from{opacity:0}}@keyframes ss-out{to{opacity:0}}
+@keyframes ss-dis{from{opacity:0;filter:blur(6px)}}
+@keyframes ss-blk-in{0%,50%{opacity:0}100%{opacity:1}}@keyframes ss-blk-out{0%{opacity:1}50%,100%{opacity:0}}
+@keyframes ss-push-in{from{transform:translateX(100%)}}@keyframes ss-push-out{to{transform:translateX(-100%)}}
+@keyframes ss-wipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}@keyframes ss-hold{to{opacity:1}}
+@keyframes ss-zoom{from{opacity:0;transform:scale(.3)}}
+.spv-bar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:999px;background:rgba(15,15,18,.72);color:#fff;opacity:0;transition:opacity .2s;z-index:5}
+.ss-view:hover .spv-bar,.spv-bar:focus-within{opacity:1}
+.spv-bar button{width:32px;height:32px;border:0;border-radius:50%;background:none;color:#fff;cursor:pointer;display:grid;place-items:center}
+.spv-bar button:hover{background:rgba(255,255,255,.15)}
+.spv-n{font-size:12px;padding:0 8px 0 4px;opacity:.85}
+@media (prefers-reduced-motion:reduce){.ly[class*=in-],.ly[class*=out-],.spv-frame .fg.kb{animation-duration:.01s!important}}
+@media (max-width:860px){.ss-body{grid-template-columns:1fr;grid-template-rows:auto minmax(260px,1fr)}.ss-set{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}}
 
 @media (prefers-reduced-motion:reduce){.leaf{transition:none}.toast{animation:none}}
 
@@ -418,7 +482,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     <button class="btn mob" data-act="showRight"><i data-ico="sliders"></i>Chỉnh sửa</button>
     <div class="menu-wrap"><button class="btn" id="bFile" data-act="fileMenu" aria-haspopup="menu" aria-expanded="false"><i data-ico="folder"></i><span>Tệp</span><i data-ico="chev"></i></button><div class="menu" id="fileMenu" role="menu" hidden></div></div>
     <button class="btn" id="bPreview" data-act="preview"><i data-ico="eye"></i><span>Xem trước</span></button>
-    <button class="btn" data-act="book"><i data-ico="book"></i><span class="hide-n">Xem dạng sách</span></button>
+    <button class="btn" data-act="ssOpen" title="Trình chiếu ảnh và xuất PowerPoint"><i data-ico="slides"></i><span class="hide-n">Trình chiếu</span></button>
+    <button class="btn" data-act="book" title="Xem dạng sách lật trang" aria-label="Xem dạng sách"><i data-ico="book"></i><span class="hide-n hide-w">Xem dạng sách</span></button>
     <button class="btn" data-act="exportOpen"><i data-ico="download"></i><span>Xuất file in</span></button>
     <button class="btn primary" data-act="addPhotos"><i data-ico="plus"></i>Thêm ảnh</button>
   </header>
@@ -471,6 +536,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 </div>
 <div class="modal light" id="confirmModal" hidden role="alertdialog" aria-modal="true" aria-labelledby="cfTitle">
   <div class="dlg sm"><div class="dlg-b"><b id="cfTitle" class="cf-t"></b><p id="cfText" class="cf-p"></p><div class="row" style="justify-content:flex-end"><button class="btn" id="cfCancel">Huỷ</button><button class="btn primary" id="cfOk">Đồng ý</button></div></div></div>
+</div>
+<div class="modal light" id="slideModal" hidden role="dialog" aria-modal="true" aria-labelledby="ssTitle">
+  <div class="dlg ss">
+    <div class="dlg-h"><div><b id="ssTitle">Trình chiếu ảnh</b><span>Chỉnh hiệu ứng, xem trước rồi xuất ra file PowerPoint (.pptx) để chiếu hoặc sửa tiếp.</span></div><button class="btn icon sm ghost" data-act="ssClose" aria-label="Đóng"><i data-ico="x"></i></button></div>
+    <div class="ss-body"><div class="ss-set" id="ssSet"></div><div class="ss-main"><div class="ss-view" id="ssView"></div><div class="ss-strip" id="ssStrip" aria-label="Danh sách slide"></div></div></div>
+    <div class="ss-foot"><span class="lbl" id="ssInfo"></span><div class="row"><button class="btn" data-act="ssPresent"><i data-ico="eye"></i>Chiếu toàn màn hình</button><button class="btn primary" id="ssExport" data-act="ssExport"><i data-ico="download"></i>Xuất PowerPoint (.pptx)</button></div></div>
+  </div>
 </div>
 <input type="file" id="fileOpen" accept=".pbook,.zip" hidden>
 <input type="file" id="file" accept="image/*,.heic,.heif,.hif,.tif,.tiff,.avif,.jfif,.dng,.cr2,.cr3,.nef,.nrw,.arw,.srf,.sr2,.raf,.orf,.rw2,.pef,.srw" multiple hidden>

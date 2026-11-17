@@ -167,7 +167,7 @@ async function renderFileMenu(){
   const UPD={off:'đã tắt tự cập nhật',checking:'đang kiểm tra bản mới trên GitHub…',offline:'không có mạng, bỏ qua kiểm tra cập nhật',latest:'đang dùng bản mới nhất trên GitHub',ready:'đã tải bản mới, bấm “Cập nhật ngay” trong thông báo',error:'tải bản mới bị lỗi, lần mở sau sẽ thử lại'};
   const where=DESK?`Bản máy tính · ${UPD[UPDS.state]||UPD.off}`:window.claude?'Bản xem trên claude.ai':'Bản web';
   const it=(act,label,key)=>`<button role="menuitem" data-act="${act}"><span>${label}</span>${key?`<kbd>${key}</kbd>`:''}</button>`;
-  m.innerHTML=it('newAlbum','Album mới')+it('openAlbum','Mở album…','Ctrl+O')+it('saveAlbum','Lưu','Ctrl+S')+it('saveAlbumAs','Lưu thành…','Ctrl+Shift+S')+'<hr>'+it('exportOpen','Xuất file in…','Ctrl+E')+'<hr>'
+  m.innerHTML=it('newAlbum','Album mới')+it('openAlbum','Mở album…','Ctrl+O')+it('saveAlbum','Lưu','Ctrl+S')+it('saveAlbumAs','Lưu thành…','Ctrl+Shift+S')+'<hr>'+it('exportOpen','Xuất file in…','Ctrl+E')+it('ssOpenMenu','Trình chiếu và xuất PowerPoint…','')+'<hr>'
     +`<div class="minfo"><b>${esc(FILE.name||'Album chưa lưu ra file')}</b><span>${IDB.db?`Tự lưu tạm vào máy${FILE.autoAt?` lúc ${hhmm(FILE.autoAt)}`:''}${usage?` · bộ nhớ đệm ${usage}`:''}`:'Trình duyệt này không cho tự lưu, hãy lưu ra file'}</span><span>${where} · phiên bản ${esc(PB_VERSION)}</span></div>`;
 }
 function toggleMenu(open){const m=$('#fileMenu'),b=$('#bFile'); open=open??m.hidden; if(open) renderFileMenu(); m.hidden=!open; b.setAttribute('aria-expanded',String(open));}
@@ -185,7 +185,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&!$('#fileMenu').hidden){toggleMenu(false); return;}
   if(!(e.ctrlKey||e.metaKey)) return; const k=e.key.toLowerCase(); if(k!=='s'&&k!=='o'&&k!=='e') return;
   e.preventDefault(); e.stopPropagation();
-  if(!$('#exportModal').hidden||!$('#confirmModal').hidden||!$('#bookModal').hidden) return;
+  if(!$('#exportModal').hidden||!$('#confirmModal').hidden||!$('#bookModal').hidden||!$('#slideModal').hidden) return;
   if(k==='s') saveProject(e.shiftKey); else if(k==='o') pickOpen(); else openExport();
 },true);
 $('#fileOpen').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0]; if(f) openProject(f,null);});

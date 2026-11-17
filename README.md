@@ -15,6 +15,7 @@ Nhấp đúp là chạy, không cần cài đặt. Lần đầu, Windows có th�
 - Thước cm hai bên, đường gióng kéo từ thước, hút dính, căn khung, cắt và xoay ảnh trong khung.
 - Xem dạng sách lật trang.
 - **Xuất file in**: PDF (có TrimBox/BleedBox), JPG hoặc PNG 300 dpi, tràn lề, dấu cắt, kiểm tra ảnh thiếu nét trước khi in.
+- **Trình chiếu và xuất PowerPoint (.pptx)**: mỗi slide là một tờ album, một trang hoặc một ảnh; nền ảnh đổ mờ (chỉnh độ mờ, độ tối) hoặc nền màu; ảnh có lề kèm bóng đổ, sát mép hoặc tràn kín; hiệu ứng chuyển của PowerPoint (mờ dần, mờ qua đen, hoà tan, đẩy trượt, vén màn, phóng to, ngẫu nhiên); phóng chậm ảnh khi chiếu; tự chuyển slide, lặp lại; slide mở đầu và lời kết bằng chữ, sửa tiếp được trong PowerPoint. Có xem trước và chiếu toàn màn hình ngay trong app.
 - **Lưu trữ**: tự lưu tạm liên tục; lưu và mở album bằng file `.pbook` (chứa đủ bố cục và ảnh gốc, mang sang máy khác mở được ngay).
 
 ## Cập nhật tự động
